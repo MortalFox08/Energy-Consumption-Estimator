@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WattWise - Advanced Energy Estimator</title>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container">
+        <header class="header">
+            <h1 class="gradient-text">WattWise</h1>
+            <p>Your Advanced Energy Management Hub</p>
+        </header>
+
+        <nav class="main-nav">
+            <button data-page="main-page" class="nav-btn">Estimator</button>
+            <button data-page="comparison-page" class="nav-btn">Compare Estimates</button>
+        </nav>
+
+        <main>
+            <div id="main-page" class="page active space-y-8">
+                <div class="card profile-management">
+                    <div class="text-content">
+                        <h3 class="section-title">Household Profile</h3>
+                        <p>Save and load your appliance settings.</p>
+                    </div>
+                    <div class="btn-group">
+                        <button id="load-profile-btn" class="btn">Load</button>
+                        <button id="save-profile-btn" class="btn btn-primary">Save</button>
+                    </div>
+                </div>
+
+                <div class="card space-y-8">
+                    <div>
+                        <h3 class="section-title">Select Seasonal Profile</h3>
+                        <div class="seasonal-tabs">
+                            <button class="tab-btn active" data-season="annual">Annual Average</button>
+                            <button class="tab-btn" data-season="summer">Summer</button>
+                            <button class="tab-btn" data-season="winter">Winter</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="section-title bordered-title">Your Home Appliances</h3>
+                        <div id="appliance-list" class="space-y-4">
+                            </div>
+                        <button id="add-appliance-btn" class="mt-4">
+                            + Add Another Appliance
+                        </button>
+                    </div>
+                    <datalist id="appliance-suggestions"></datalist>
+
+                    <div>
+                        <h3 class="section-title bordered-title">Phantom & Standby Load</h3>
+                        <div class="form-grid">
+                            <label><input type="checkbox" class="phantom-device" value="5"><span> TV/Monitor</span></label>
+                            <label><input type="checkbox" class="phantom-device" value="2"><span> Phone Chargers</span></label>
+                            <label><input type="checkbox" class="phantom-device" value="10"><span> Game Console</span></label>
+                            <label><input type="checkbox" class="phantom-device" value="3"><span> Microwave/Oven</span></label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="section-title bordered-title">Household & Billing Information</h3>
+                        <div class="form-grid">
+                            <div>
+                                <label for="country" class="form-label">Country</label>
+                                <select id="country" class="form-select"></select>
+                            </div>
+                            <div>
+                                <h4 class="form-label">Electricity Rate Tiers (<span id="currency-symbol-rate"></span>/kWh)</h4>
+                                <div id="rate-tiers-container" class="space-y-4">
+                                    </div>
+                                <button id="add-tier-btn" style="color: var(--green-primary); background: none; border: none; padding: 0; cursor: pointer; font-weight: 600; margin-top: 0.5rem;">+ Add Tier</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <button id="calculate-btn" class="btn btn-primary btn-full-rounded btn-calculate">
+                            Estimate My Bill
+                        </button>
+                    </div>
+                    <p id="error-message" class="text-red-500 text-center hidden"></p>
+                </div>
+            </div>
+
+            <div id="results-page" class="page space-y-6">
+                 <div id="progress-container" class="card text-center">
+                    <h2 class="section-title">Calculating Your Estimate...</h2>
+                    <div class="progress-bar-container"><div id="progress-bar" class="progress-bar-inner"></div></div>
+                </div>
+
+                <div id="results-display" class="hidden space-y-8">
+                    <div id="results-content" class="card space-y-8">
+                        <div class="results-grid">
+                            <div class="space-y-4">
+                                <h4 class="section-title text-center">Energy Cost Breakdown</h4>
+                                <div id="bill-breakdown-container">
+                                    </div>
+                            </div>
+                            <div class="summary-card">
+                                 <h4 class="section-title text-center">Bill Summary</h4>
+                                 <div class="space-y-4">
+                                     <div class="summary-row"><span>Subtotal:</span><span id="subtotal-bill"></span></div>
+                                     <div class="summary-row" id="tax-row"><span>Tax (<span id="tax-rate-display"></span>%):</span><span id="tax-amount"></span></div>
+                                     <hr>
+                                     <div class="summary-row summary-total"><span>Total Estimate:</span><span id="estimated-bill" class="total-bill-amount"></span></div>
+                                 </div>
+                                 <hr style="margin: 1rem 0;">
+                                 <div class="text-center">
+                                    <h4 style="font-weight: 600;">Carbon Footprint</h4>
+                                    <p style="font-size: 1.5rem; font-weight: 700;" id="carbon-footprint"></p>
+                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="results-actions">
+                        <button id="view-savings-goal-btn" class="btn btn-primary btn-full-rounded btn-large">Set Savings Goal</button>
+                        <button id="view-suggestions-btn" class="btn btn-primary btn-full-rounded btn-large">View Savings Tips</button>
+                        <button id="save-estimate-btn" class="btn btn-full-rounded btn-large" style="background-color: #2563eb; color: white;">Save Estimate</button>
+                        <button id="download-pdf-btn" class="btn btn-full-rounded btn-large" style="background-color: #4b5563; color: white;">Download PDF</button>
+                        <button id="start-over-btn-results" class="btn btn-full-rounded btn-large" style="background-color: #e5e7eb; color: #1f2937;">Start Over</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="savings-goal-page" class="page space-y-8 card">
+                <div class="text-center"><h2 class="section-title">Set Your Savings Goal</h2></div>
+                <div class="space-y-4 savings-goal-container">
+                    <div class="savings-slider-container">
+                        <span id="savings-goal-min" style="font-weight: 600;"></span>
+                        <input type="range" id="savings-goal-slider" class="savings-range">
+                        <span id="savings-goal-max" style="font-weight: 600;"></span>
+                    </div>
+                    <p class="text-center">Your Goal: <span id="savings-goal-value" style="font-weight: 700; color: var(--green-dark);"></span></p>
+                    <div class="savings-bar-container">
+                        <div id="savings-goal-bar" style="width: 0%;"></div>
+                        <div id="savings-goal-marker" style="left: 50%;"></div>
+                    </div>
+                    <p id="savings-status" class="text-center font-semibold pt-2"></p>
+                </div>
+                <div class="text-center"><button id="back-to-results-btn-from-goal" class="btn btn-primary btn-full-rounded btn-large">Back to My Estimate</button></div>
+            </div>
+            
+            <div id="suggestions-page" class="page space-y-8 card">
+                <div class="text-center">
+                    <h2 class="section-title">Personalized Savings Tips</h2>
+                </div>
+                <div class="space-y-4">
+                    <h3 class="section-title">Standard Recommendations</h3>
+                    <div id="suggestions-list" class="space-y-6"></div>
+                </div>
+
+                <div class="text-center"><button id="back-to-results-btn" class="btn btn-primary btn-full-rounded btn-large">Back to My Estimate</button></div>
+            </div>
+
+            <div id="comparison-page" class="page">
+                <div class="card">
+                    <h2 class="section-title">Saved Estimate Comparison</h2>
+                    <div id="comparison-container">
+                        </div>
+                     <p id="no-comparison-text" class="text-center" style="padding: 2rem 0; color: var(--gray-text);">You haven't saved any estimates yet. Calculate and save an estimate to compare it here.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="profile-modal" class="modal-overlay">
+        <div class="modal-content space-y-4">
+            <h3 id="profile-modal-title" class="section-title"></h3>
+            <div id="profile-modal-body"></div>
+            <div class="modal-actions">
+                <button id="profile-modal-cancel" class="btn">Cancel</button>
+                <button id="profile-modal-confirm" class="btn btn-primary"></button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
